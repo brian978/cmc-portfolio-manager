@@ -1,16 +1,44 @@
-# This is a sample Python script.
+import json
+import os
+from time import sleep
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from dotenv import load_dotenv
+import requests
 
+from payload_converter import eth, from_cg_to_cmc, btc, dot, near, egld, ftm, solana, avax, axie
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+load_dotenv()
 
+# Read transactions from JSON file
+with open('transactions.json') as file:
+    data = json.load(file)
+    transactions = data['transactions']
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+# API endpoint URL
+api_url = 'https://api.coinmarketcap.com/asset/v3/portfolio/add'  # Replace with your API endpoint URL
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+# Bearer token for authentication
+bearer_token = os.getenv('BEARER_TOKEN')  # Replace with your bearer token
+
+# Iterate over transactions and make POST requests
+for transaction in transactions:
+    if transaction['transaction_type'] == 'transfer_in' or transaction['transaction_type'] == 'transfer_out':
+        continue
+
+    headers = {
+        'Authorization': f'Bearer {bearer_token}',
+        'Content-Type': 'application/json'
+    }
+
+    payload = from_cg_to_cmc(axie(), transaction)
+    response = requests.post(api_url, json=payload, headers=headers)
+
+    print(payload)
+
+    if response.status_code == 200:
+        print(f"Transaction {transaction['id']} successfully sent to the API.")
+        print(response.text)
+    else:
+        print(f"Failed to send transaction {transaction['id']} to the API. Error: {response.text}")
+
+    sleep(20)
